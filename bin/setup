@@ -1,0 +1,4 @@
+ln -s -f ../../bin/pre-commit ./.git/hooks/pre-commit
+ln -s -f ../../bin/post-merge ./.git/hooks/post-merge
+. ./bin/post-merge
+

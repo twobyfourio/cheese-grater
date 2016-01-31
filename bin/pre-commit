@@ -1,0 +1,21 @@
+#!/usr/bin/env bash
+# Any git-ignored files in the function/ directory will be encrypted before commit.
+
+which aws            || (echo "Run 'brew install aws-cli' to continue" && exit 1 )
+source "./.env"      || (echo "Set up your .env file to continue"      && exit 1 )
+[ -z "$AWS_KEY_ID" ] && echo "Could not find \$AWS_KEY_ID, check .env" && exit 1 
+
+for file in functions/*/*; do
+  if [ $(git check-ignore $file) ]; then
+    function="$(basename $(dirname $file))"
+    key="$(aws kms generate-data-key --key-id $AWS_KEY_ID                      \
+                --encryption-context "function=$command,file=$(basename $file)" \
+                --key-spec AES_256                                             \
+                --output text)"
+    
+    echo $key | cut -d ' ' -f 3 | openssl aes-256-cbc -e -pass stdin -a       \
+                                                -in $file -out $file.enc
+    echo $key | cut -d ' ' -f 1 | base64 --decode > $file.key
+  fi
+done
+

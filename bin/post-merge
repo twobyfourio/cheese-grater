@@ -1,0 +1,22 @@
+#!/usr/bin/env bash
+# Any .enc files will be decrypted post-merge.
+
+which aws || (echo "Run 'brew install aws-cli' to continue" && exit 1 )
+
+for file in functions/*/*.enc; do
+  function="$(basename $(dirname $file))"
+  source="$(basename $file .enc)"
+
+  key=$(aws kms decrypt                                                               \
+          --encryption-context "function=$command,file=$source"                        \
+          --output text                                                               \
+          --query Plaintext                                                           \
+          --ciphertext-blob fileb://functions/$command/$source.key)
+     
+  openssl aes-256-cbc -d -a -pass "pass:$key"               \
+                      -in functions/$command/$source.enc     \
+                      -out functions/$command/$source
+
+done
+
+
